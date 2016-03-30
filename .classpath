@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" output="target/classes" path="sources">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/opencv-3.1.0">
+		<attributes>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="C:/DEV/C/opencv/build/install/java"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="C:/DEV/JAVA/LIB/Tess4J/lib/commons-io-2.4.jar"/>
+	<classpathentry kind="lib" path="C:/DEV/JAVA/LIB/Tess4J/lib/jai_imageio.jar"/>
+	<classpathentry kind="lib" path="C:/DEV/JAVA/LIB/Tess4J/lib/jna.jar"/>
+	<classpathentry kind="lib" path="C:/DEV/JAVA/LIB/Tess4J/lib/lept4j-1.0.1.jar"/>
+	<classpathentry kind="lib" path="C:/DEV/JAVA/LIB/Tess4J/dist/tess4j-3.0.jar"/>
+	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" output="target/test-classes" path="src/test/java">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="target/classes"/>
+</classpath>
