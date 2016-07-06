@@ -48,13 +48,6 @@ public interface IWebcamService {
 	String predictFacesFromSample();
 
 	/**
-	 * Read a text from the captured image.
-	 * 
-	 * @return the text read.
-	 */
-	String readText();
-
-	/**
 	 * Start capturing from the webcam.
 	 * 
 	 * @return true if succeeded.

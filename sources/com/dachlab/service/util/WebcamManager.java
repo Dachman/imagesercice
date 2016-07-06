@@ -3,6 +3,7 @@ package com.dachlab.service.util;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,9 +29,6 @@ import org.springframework.stereotype.Component;
 import com.dachlab.model.User;
 import com.dachlab.properties.IWebcamProperties;
 import com.dachlab.service.IUserSevice;
-
-import net.sourceforge.tess4j.Tesseract;
-import net.sourceforge.tess4j.TesseractException;
 
 @Component("webcamManager")
 public class WebcamManager {
@@ -76,6 +74,15 @@ public class WebcamManager {
 				camera.release();
 			}
 		}
+	}
+
+	/**
+	 * Return a gray image from the webcam.
+	 * 
+	 * @return the image captured.
+	 */
+	public Mat getGrayImageFromWebcam() {
+		return toGray(getImagefromWebcam());
 	}
 
 	/**
@@ -179,7 +186,7 @@ public class WebcamManager {
 		try {
 
 			MatOfRect faceDetections = new MatOfRect();
-			CascadeClassifier faceDetector = new CascadeClassifier(WebcamManager.class.getResource("haarcascade_frontalface_alt.xml").getPath().substring(1));
+			CascadeClassifier faceDetector = new CascadeClassifier(classifierName);
 
 			faceDetector.detectMultiScale(image, faceDetections);
 			return faceDetections;
@@ -249,7 +256,6 @@ public class WebcamManager {
 	public boolean learnFaces() {
 		// System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		log.debug("Starting to learn faces from" + webcamProperties.getFacesPath() + ".");
-		String[] dirName;
 		File[] faces;
 		File dir;
 		int counter = 0;
@@ -384,7 +390,7 @@ public class WebcamManager {
 			}
 			Mat img = Imgcodecs.imread(file, 0);
 
-			correspondances += "<H1>" + imageFile.getName() + " - " + predictFace(img) + "</H1>";
+			correspondances += "<H1>" + imageFile.getName() + " - " + Arrays.toString(predictFace(img)) + "</H1>";
 		}
 		return correspondances;
 	}
@@ -439,32 +445,6 @@ public class WebcamManager {
 			saveImage(image, webcamProperties.getPredictedImagesPath());
 		}
 		return returnedString;
-	}
-
-	/**
-	 * Read a text from the captured image.
-	 * 
-	 * @return the text read.
-	 */
-	public String readText() {
-		final Mat capturedImage = toGray(getImagefromWebcam());
-		if (capturedImage != null) {
-			final Tesseract textReader = new Tesseract();
-			textReader.setDatapath(webcamProperties.getTextReaderTrainingDataPath());
-			String fileName = saveImage(capturedImage, webcamProperties.getPredictedTextImagesPath());
-			File file = new File(fileName);
-			try {
-				log.info("Reading text from image " + fileName + ".");
-				final String textFound = textReader.doOCR(file);
-				log.info("Found: " + textFound);
-				return textFound;
-			} catch (TesseractException e) {
-				log.error("Unable to read text in the image " + fileName + ".", e);
-				return null;
-			}
-		} else {
-			return null;
-		}
 	}
 
 	/**

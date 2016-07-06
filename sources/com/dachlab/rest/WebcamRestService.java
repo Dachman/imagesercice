@@ -56,12 +56,6 @@ public class WebcamRestService implements IWecamRestService {
 	}
 
 	@Override
-	@RequestMapping("/readText")
-	public @ResponseBody String readText() {
-		return webcamService.readText();
-	}
-
-	@Override
 	@RequestMapping("/startCapture")
 	public @ResponseBody boolean startCapture() {
 		return webcamService.startCapture();

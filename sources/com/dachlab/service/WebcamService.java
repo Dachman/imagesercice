@@ -52,11 +52,6 @@ public class WebcamService implements IWebcamService {
 	}
 
 	@Override
-	public String readText() {
-		return webcamManager.readText();
-	}
-
-	@Override
 	public boolean startCapture() {
 		return webcamManager.startCapture();
 	}
