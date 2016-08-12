@@ -366,7 +366,7 @@ public class WebcamManager {
 	 * 
 	 * @return the name found.
 	 */
-	public String[] predictFace() {
+	public List<User> predictFace() {
 		return predictFace(getImagefromWebcam());
 	}
 
@@ -375,11 +375,11 @@ public class WebcamManager {
 	 * 
 	 * @return the corresponding names.
 	 */
-	public String predictFacesFromSample() {
+	public List<User> predictFacesFromSample() {
 		final File facesPath = new File(webcamProperties.getFacesPath());
 		File imageFile;
 		String[] facesDirectories = facesPath.list();
-		String correspondances = "";
+		List<User> users = null;
 
 		// Iterate over the faces files.
 		for (String file : facesDirectories) {
@@ -390,9 +390,10 @@ public class WebcamManager {
 			}
 			Mat img = Imgcodecs.imread(file, 0);
 
-			correspondances += "<H1>" + imageFile.getName() + " - " + Arrays.toString(predictFace(img)) + "</H1>";
+			users = predictFace(img);
+			log.info(imageFile.getName() + " -> " + Arrays.toString(users.toArray(new User[users.size()])));
 		}
-		return correspondances;
+		return users;
 	}
 
 	/**
@@ -402,8 +403,9 @@ public class WebcamManager {
 	 *            image to predict the face from.
 	 * @return the name found.
 	 */
-	public String[] predictFace(final Mat image) {
-		String[] returnedString;
+	public List<User> predictFace(final Mat image) {
+		ArrayList<User> users = new ArrayList<>();
+		User userFound;
 		double d;
 		int[] id = { -1 };
 		double[] dist = { -1 };
@@ -417,7 +419,6 @@ public class WebcamManager {
 		final MatOfRect facesCoordinates = getFacesCoordinates(grayImage);
 		Rect[] facesArray = facesCoordinates.toArray();
 		final List<Mat> faces = getFaces(grayImage, facesCoordinates);
-		returnedString = new String[faces.size()];
 		for (Mat face : faces) {
 			// Predict.
 			faceRecognizer.predict(face, id, dist);
@@ -429,7 +430,13 @@ public class WebcamManager {
 				saveFace(nameFound, face);
 			}
 			d = ((int) (dist[0] * 100));
-			returnedString[counter] = nameFound;
+			userFound = userService.getByUserName(nameFound);
+			if (userFound != null && userFound.getUserId() != 0) {
+				userFound.setUserPassword("*****");
+				users.add(userFound);
+			} else {
+				users.add(new User(0, nameFound, "", ""));
+			}
 			log.debug("Found face " + nameFound + " (" + d / 100 + ").");
 
 			// Save the face and draw on source image.
@@ -444,7 +451,7 @@ public class WebcamManager {
 		if (!webcamProperties.getPredictedImagesPath().equals("")) {
 			saveImage(image, webcamProperties.getPredictedImagesPath());
 		}
-		return returnedString;
+		return users;
 	}
 
 	/**
@@ -521,6 +528,9 @@ public class WebcamManager {
 	 *            the authenticated user.
 	 */
 	public void setAuthenticatedUSer(User authenticatedUSer) {
+		if (authenticatedUSer != null) {
+			authenticatedUSer.setUserPassword("*****");
+		}
 		this.authenticatedUSer = authenticatedUSer;
 	}
 

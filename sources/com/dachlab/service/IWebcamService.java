@@ -1,5 +1,7 @@
 package com.dachlab.service;
 
+import java.util.List;
+
 import com.dachlab.model.User;
 
 /**
@@ -31,7 +33,7 @@ public interface IWebcamService {
 	 * 
 	 * @return the names found.
 	 */
-	String[] predictFace();
+	List<User> predictFace();
 
 	/**
 	 * Start learning stored faces.
@@ -45,7 +47,7 @@ public interface IWebcamService {
 	 * 
 	 * @return the corresponding names.
 	 */
-	String predictFacesFromSample();
+	List<User> predictFacesFromSample();
 
 	/**
 	 * Start capturing from the webcam.

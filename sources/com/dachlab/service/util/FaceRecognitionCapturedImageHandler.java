@@ -2,6 +2,7 @@ package com.dachlab.service.util;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.opencv.core.Mat;
@@ -30,20 +31,23 @@ public class FaceRecognitionCapturedImageHandler implements ICapturedImageHandle
 
 	@Override
 	public void handle(Mat image) {
-		String[] namesFound = webcamManager.predictFace(image);
-		if (namesFound.length != 0) {
-			log.info(namesFound.length + " faces detected. " + Arrays.toString(namesFound));
-			for (String name : namesFound) {
-				facesFound.put(name, facesFound.getOrDefault(name, 0) + 1);
-				log.info("Face found : " + name + "(" + facesFound.get(name) + ")");
-				if (facesFound.get(name).compareTo(webcamManager.getWebcamProperties().getAuthenticationConfidenceFactor()) >= 0) {
-					User userFound = webcamManager.getUserService().getByUserName(name);
-					if (userFound != null) {
-						webcamManager.setAuthenticatedUSer(userFound);
-						log.info("User " + name + " found in the DB.");
-					} else {
-						webcamManager.setAuthenticatedUSer(null);
-						log.debug("User not found in the DB, failed to authenticate.");
+		if (webcamManager.getAuthenticatedUSer() == null) {
+			List<User> users = webcamManager.predictFace(image);
+			if (users.size() != 0) {
+				log.info(users.size() + " faces detected. " + Arrays.toString(users.toArray(new User[users.size()])));
+				for (User user : users) {
+					facesFound.put(user.getUserName(), facesFound.getOrDefault(user.getUserName(), 0) + 1);
+					log.info("Face found : " + user.getUserName() + "(" + facesFound
+							.get(user.getUserName()) + ")      " + (int) facesFound.get(user.getUserName()) + "?==" + (int) webcamManager.getWebcamProperties().getAuthenticationConfidenceFactor());
+					if ((int) facesFound.get(user.getUserName()) == (int) webcamManager.getWebcamProperties().getAuthenticationConfidenceFactor()) {
+						User userFound = webcamManager.getUserService().getByUserName(user.getUserName());
+						if (userFound != null) {
+							webcamManager.setAuthenticatedUSer(userFound);
+							log.info("User " + user.getUserName() + " found in the DB.");
+						} else {
+							webcamManager.setAuthenticatedUSer(null);
+							log.debug("User not found in the DB, failed to authenticate.");
+						}
 					}
 				}
 			}

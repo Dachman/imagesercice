@@ -1,5 +1,7 @@
 package com.dachlab.service;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +39,7 @@ public class WebcamService implements IWebcamService {
 	}
 
 	@Override
-	public String[] predictFace() {
+	public List<User> predictFace() {
 		return webcamManager.predictFace();
 	}
 
@@ -47,7 +49,7 @@ public class WebcamService implements IWebcamService {
 	}
 
 	@Override
-	public String predictFacesFromSample() {
+	public List<User> predictFacesFromSample() {
 		return webcamManager.predictFacesFromSample();
 	}
 
