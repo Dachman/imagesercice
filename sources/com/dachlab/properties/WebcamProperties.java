@@ -25,6 +25,7 @@ public class WebcamProperties implements IWebcamProperties {
 	private String textReaderTrainingDataPath;
 	private String faceDetectionClassifierName;
 	private Integer authenticationConfidenceFactor;
+	private Integer loopsForFaceRecognitionAuthentication;
 
 	@Override
 	public int getWidth() {
@@ -58,6 +59,11 @@ public class WebcamProperties implements IWebcamProperties {
 	@Override
 	public Map<String, Integer> getDimension() {
 		return dimension;
+	}
+
+	@Override
+	public Integer getLoopsForFaceRecognitionAuthentication() {
+		return loopsForFaceRecognitionAuthentication;
 	}
 
 	public void setDimension(Map<String, Integer> dimension) {
@@ -121,6 +127,10 @@ public class WebcamProperties implements IWebcamProperties {
 
 	public void setAuthenticationConfidenceFactor(Integer authenticationConfidenceFactor) {
 		this.authenticationConfidenceFactor = authenticationConfidenceFactor;
+	}
+
+	public void setLoopsForFaceRecognitionAuthentication(Integer loopsForFaceRecognitionAuthentication) {
+		this.loopsForFaceRecognitionAuthentication = loopsForFaceRecognitionAuthentication;
 	}
 
 }

@@ -25,5 +25,7 @@ public interface IWebcamProperties {
 	String getTextReaderTrainingDataPath();
 
 	Integer getAuthenticationConfidenceFactor();
+	
+	Integer getLoopsForFaceRecognitionAuthentication();
 
 }

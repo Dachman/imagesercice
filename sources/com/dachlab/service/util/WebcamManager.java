@@ -474,7 +474,7 @@ public class WebcamManager {
 		}
 		startCapture();
 		setAuthenticatedUSer(null);
-		int loopCounter = 15;
+		int loopCounter = webcamProperties.getLoopsForFaceRecognitionAuthentication();
 		while (loopCounter-- > 0) {
 			if (getAuthenticatedUSer() == null) {
 				try {
