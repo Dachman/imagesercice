@@ -28,4 +28,14 @@ public interface IWebcamProperties {
 	
 	Integer getLoopsForFaceRecognitionAuthentication();
 
+	Integer getMaximumFramesInVideoFiles();
+
+	String getVideoFilesPath();
+
+	String getBodyDetectionClassifierName();
+
+	int getVideoSequenceLength();
+
+	int getVideoFPS();
+
 }

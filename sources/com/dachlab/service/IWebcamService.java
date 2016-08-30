@@ -70,4 +70,24 @@ public interface IWebcamService {
 	 */
 	User authenticate();
 
+	/**
+	 * Predict faces based on an image.
+	 * 
+	 * @param image image to analyze.
+	 * @return List of users found.
+	 */
+	List<User> predictFace(byte[] image);
+
+	/**
+	 * Start the watching process.
+	 * @return true if succeeded.
+	 */
+	boolean startWatching();
+
+	/**
+	 * Stop the watching process
+	 * @return true if succeeded.
+	 */
+	boolean stopWatching();
+
 }

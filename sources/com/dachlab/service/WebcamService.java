@@ -68,4 +68,18 @@ public class WebcamService implements IWebcamService {
 		return webcamManager.authenticate();
 	}
 
+	@Override
+	public List<User> predictFace(byte[] image) {
+		return webcamManager.predictFace(image);
+	}
+
+	@Override
+	public boolean startWatching() {
+		return webcamManager.startWatching();
+	}
+
+	@Override
+	public boolean stopWatching() {
+		return webcamManager.stopWatching();
+	}
 }

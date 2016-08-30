@@ -1,5 +1,8 @@
 package com.dachlab.rest;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,8 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.dachlab.exception.ImageServiceException;
 import com.dachlab.model.User;
@@ -110,11 +115,50 @@ public class WebcamRestService implements IWecamRestService {
 
 	@Override
 	@RequestMapping(value = "/authenticate", method = RequestMethod.GET)
-	public @ResponseBody ResponseEntity<User>  authenticate() throws ImageServiceException {
+	public @ResponseBody ResponseEntity<User> authenticate() throws ImageServiceException {
 		try {
 			return ResponseEntity.status(HttpStatus.OK).body(webcamService.authenticate());
 		} catch (Exception e) {
 			throw new ImageServiceException("Failed to serve the authenticate request.", e);
+		}
+	}
+
+	@RequestMapping(value = "/predictFaceFromImage", method = RequestMethod.POST)
+	public @ResponseBody ResponseEntity<List<User>> predictFaceFromImage(@RequestParam("file") MultipartFile file) throws ImageServiceException {
+		final String name = file.getOriginalFilename();
+		if (!file.isEmpty()) {
+			try {
+				byte[] image = file.getBytes();
+				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(new File(name + "-uploaded")));
+				stream.write(image);
+				stream.close();
+				final List<User> users = webcamService.predictFace(image);
+				return ResponseEntity.ok().body(users);
+			} catch (Exception e) {
+				throw new ImageServiceException("Failed to upload or predict the face.", e);
+			}
+		} else {
+			throw new ImageServiceException("File is empty.");
+		}
+	}
+
+	@Override
+	@RequestMapping(value = "/startWatching", method = RequestMethod.GET)
+	public @ResponseBody ResponseEntity<Boolean> startWatching() throws ImageServiceException {
+		try {
+			return ResponseEntity.status(HttpStatus.OK).body(webcamService.startWatching());
+		} catch (Exception e) {
+			throw new ImageServiceException("Failed to serve the startWatching request.", e);
+		}
+	}
+
+	@Override
+	@RequestMapping(value = "/stopWatching", method = RequestMethod.GET)
+	public @ResponseBody ResponseEntity<Boolean> stopWatching() throws ImageServiceException {
+		try {
+			return ResponseEntity.status(HttpStatus.OK).body(webcamService.stopWatching());
+		} catch (Exception e) {
+			throw new ImageServiceException("Failed to serve the stopWatching request.", e);
 		}
 	}
 

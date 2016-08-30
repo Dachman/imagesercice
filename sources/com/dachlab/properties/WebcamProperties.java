@@ -24,8 +24,13 @@ public class WebcamProperties implements IWebcamProperties {
 	private String predictedTextImagesPath;
 	private String textReaderTrainingDataPath;
 	private String faceDetectionClassifierName;
+	private String bodyDetectionClassifierName;
 	private Integer authenticationConfidenceFactor;
 	private Integer loopsForFaceRecognitionAuthentication;
+	private Integer maximumFramesInVideoFiles;
+	private String videoFilesPath;
+	private int videoSequenceLength;
+	private int videoFPS;
 
 	@Override
 	public int getWidth() {
@@ -131,6 +136,51 @@ public class WebcamProperties implements IWebcamProperties {
 
 	public void setLoopsForFaceRecognitionAuthentication(Integer loopsForFaceRecognitionAuthentication) {
 		this.loopsForFaceRecognitionAuthentication = loopsForFaceRecognitionAuthentication;
+	}
+
+	@Override
+	public Integer getMaximumFramesInVideoFiles() {
+		return maximumFramesInVideoFiles;
+	}
+
+	public void setMaximumFramesInVideoFiles(Integer maximumFramesInVideoFiles) {
+		this.maximumFramesInVideoFiles = maximumFramesInVideoFiles;
+	}
+
+	@Override
+	public String getVideoFilesPath() {
+		return videoFilesPath;
+	}
+
+	public void setVideoFilesPath(String videoFilesPath) {
+		this.videoFilesPath = videoFilesPath;
+	}
+
+	@Override
+	public String getBodyDetectionClassifierName() {
+		return bodyDetectionClassifierName;
+	}
+
+	public void setBodyDetectionClassifierName(String bodyDetectionClassifierName) {
+		this.bodyDetectionClassifierName = bodyDetectionClassifierName;
+	}
+
+	@Override
+	public int getVideoSequenceLength() {
+		return videoSequenceLength;
+	}
+
+	public void setVideoSequenceLength(int videoSequenceLength) {
+		this.videoSequenceLength = videoSequenceLength;
+	}
+
+	@Override
+	public int getVideoFPS() {
+		return videoFPS;
+	}
+
+	public void setVideoFPS(int videoFPS) {
+		this.videoFPS = videoFPS;
 	}
 
 }

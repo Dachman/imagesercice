@@ -4,11 +4,14 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -21,6 +24,8 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.utils.Converters;
 import org.opencv.videoio.VideoCapture;
+import org.opencv.videoio.VideoWriter;
+import org.opencv.videoio.Videoio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +46,7 @@ public class WebcamManager {
 
 	private final FaceRecognizer faceRecognizer = Face.createLBPHFaceRecognizer(1, 8, 8, 8, 130);
 
+	// OpenCV needs to be trained before being able to recognize faces.
 	private boolean trained = false;
 
 	private VideoCapture camera;
@@ -52,8 +58,12 @@ public class WebcamManager {
 
 	private User authenticatedUSer;
 
+	private List<Mat> capturedFramesQueue = new ArrayList<Mat>();
+
+	private boolean recording = false;
+
 	@Autowired
-	private IWebcamProperties webcamProperties;
+	protected IWebcamProperties webcamProperties;
 
 	/**
 	 * Get an image from the webcam.
@@ -99,7 +109,7 @@ public class WebcamManager {
 	 * 
 	 * @return true if succeeded.
 	 */
-	public boolean startCapture(ICapturedImageHandler capturedImageHandler) {
+	public boolean startCapture(final ICapturedImageHandler capturedImageHandler) {
 		log.debug("Starting capture.");
 		if (camera != null) {
 			camera.release();
@@ -130,7 +140,7 @@ public class WebcamManager {
 				break;
 			}
 		}
-		log.debug("Releasing camera.");
+		log.debug("Capture stopped. Releasing camera.");
 		camera.release();
 		log.debug("Released.");
 		return true;
@@ -184,16 +194,46 @@ public class WebcamManager {
 	private MatOfRect getFacesCoordinates(final Mat image) {
 		final String classifierName = webcamProperties.getFaceDetectionClassifierName();
 		try {
-
-			MatOfRect faceDetections = new MatOfRect();
-			CascadeClassifier faceDetector = new CascadeClassifier(classifierName);
-
-			faceDetector.detectMultiScale(image, faceDetections);
-			return faceDetections;
+			return getObjectCoordinates(image, classifierName);
 		} catch (Exception e) {
 			log.error("Unabel to retrieve the face(s) from the image. Classifier file is " + classifierName + ".", e);
 			return null;
 		}
+	}
+
+	/**
+	 * Get the coordinates of the bodies found in the image.
+	 * 
+	 * @param image
+	 *            The image where to look for the bodies.
+	 * @return The coordinates of the bodies found.
+	 */
+	protected MatOfRect getBodyCoordinates(final Mat image) {
+		final String classifierName = webcamProperties.getBodyDetectionClassifierName();
+		try {
+			return getObjectCoordinates(image, classifierName);
+		} catch (Exception e) {
+			log.error("Unabel to retrieve the body(ies) from the image. Classifier file is " + classifierName + ".", e);
+			return null;
+		}
+	}
+
+	/**
+	 * Get the coordinates of the objects found in the image.
+	 * 
+	 * @param image
+	 *            the image to analyze.
+	 * @param classifierName
+	 *            the classifier finle path that will represent the object to
+	 *            find in the image.
+	 * @return The coordinates of all the objects found in the image.
+	 * @throws Exception
+	 */
+	private MatOfRect getObjectCoordinates(final Mat image, String classifierName) throws Exception {
+		MatOfRect objectCoordinates = new MatOfRect();
+		CascadeClassifier objectDetector = new CascadeClassifier(classifierName);
+		objectDetector.detectMultiScale(image, objectCoordinates);
+		return objectCoordinates;
 	}
 
 	/**
@@ -367,7 +407,45 @@ public class WebcamManager {
 	 * @return the name found.
 	 */
 	public List<User> predictFace() {
-		return predictFace(getImagefromWebcam());
+		return predictFaces(getImagefromWebcam());
+	}
+
+	/**
+	 * Predict the name related to the face captured.
+	 * 
+	 * @return the name found.
+	 */
+	public List<User> predictFace(byte[] image) {
+		// TODO - FIX - Transform the byte[] into a Mat.
+		return predictFaces(Imgcodecs.imdecode(new MatOfByte(image), Imgcodecs.CV_LOAD_IMAGE_UNCHANGED));
+	}
+
+	/**
+	 * Write in a file the video composed by the list of images provided.
+	 * 
+	 * @param images
+	 *            images that will compose the video;
+	 */
+	public void writeRecordedVideo(List<Mat> images) {
+		final String videoFileName = webcamProperties.getVideoFilesPath() + DateFormatUtils.format(new Date(), "yyyyMMdd") + "-" + UUID.randomUUID() + ".avi";
+		log.info("Writing video to disk. File name : " + videoFileName + " (" + images.size() + " frames).");
+		final Size frameSize = new Size((int) camera.get(Videoio.CAP_PROP_FRAME_WIDTH), (int) camera.get(Videoio.CAP_PROP_FRAME_HEIGHT));
+		final VideoWriter videoWriter = new VideoWriter();
+		videoWriter.open(videoFileName, VideoWriter.fourcc('D', 'I', 'V', 'X'), webcamProperties.getVideoFPS(), frameSize, true);
+		// log.info("videoWriter open ? " + videoWriter.isOpened());
+		final long startTime = System.currentTimeMillis();
+		for (Mat image : images) {
+			videoWriter.write(image);
+		}
+		videoWriter.release();
+		//Free memory.
+		for (Mat image : images) {
+			image.release();
+		}
+		images.clear();
+		final long estimatedTime = System.currentTimeMillis() - startTime;
+		log.info("Video file " + videoFileName + " written to disk in " + (double) (estimatedTime / 1000) + " seconds.");
+
 	}
 
 	/**
@@ -390,7 +468,7 @@ public class WebcamManager {
 			}
 			Mat img = Imgcodecs.imread(file, 0);
 
-			users = predictFace(img);
+			users = predictFaces(img);
 			log.info(imageFile.getName() + " -> " + Arrays.toString(users.toArray(new User[users.size()])));
 		}
 		return users;
@@ -403,7 +481,7 @@ public class WebcamManager {
 	 *            image to predict the face from.
 	 * @return the name found.
 	 */
-	public List<User> predictFace(final Mat image) {
+	public List<User> predictFaces(final Mat image) {
 		ArrayList<User> users = new ArrayList<>();
 		User userFound;
 		double d;
@@ -444,14 +522,32 @@ public class WebcamManager {
 				Imgproc.resize(face, face, new Size(100, 100));
 				saveImage(face, webcamProperties.getPredictedFacesPath());
 			}
-			Imgproc.rectangle(image, facesArray[counter].tl(), facesArray[counter].br(), new Scalar(255, 255, 255), 2);
-			Imgproc.putText(image, nameFound, new Point(facesArray[counter].x, facesArray[counter].y + facesArray[counter].height + 20), Core.FONT_HERSHEY_PLAIN, 1.3, new Scalar(255, 255, 255), 2);
+			drawRectangleOnImage(image, facesArray[counter].tl(), facesArray[counter].br(), nameFound);
 			counter++;
 		}
 		if (!webcamProperties.getPredictedImagesPath().equals("")) {
 			saveImage(image, webcamProperties.getPredictedImagesPath());
 		}
 		return users;
+	}
+
+	/**
+	 * Draw a rectangle and add a label if any on the image.
+	 * 
+	 * @param Image
+	 *            image where to add the rectangle and the label
+	 * @param topLeft
+	 *            Top left coordinate of the rectangle
+	 * @param bottomRight
+	 *            Bottom right coordinate of the rectable.
+	 * @param label
+	 *            Label to add.
+	 */
+	protected void drawRectangleOnImage(Mat image, Point topLeft, Point bottomRight, String label) {
+		Imgproc.rectangle(image, topLeft, bottomRight, new Scalar(255, 255, 255), 2);
+		if (label != null && !label.equals("")) {
+			Imgproc.putText(image, label, new Point(topLeft.x, topLeft.y - 20), Core.FONT_HERSHEY_PLAIN, 1.3, new Scalar(255, 255, 255), 2);
+		}
 	}
 
 	/**
@@ -503,6 +599,22 @@ public class WebcamManager {
 		}
 	}
 
+	public boolean startWatching() {
+		try {
+			startCapture(new WatchImageHandler(this));
+			return true;
+		} catch (Exception e) {
+			log.error("Error while starting to Watch.", e);
+			return false;
+		}
+	}
+
+	public boolean stopWatching() {
+		this.recording = false;
+		stopCapture();
+		return true;
+	}
+
 	/**
 	 * Get the properties accessor.
 	 * 
@@ -541,6 +653,61 @@ public class WebcamManager {
 	 */
 	public IUserSevice getUserService() {
 		return userService;
+	}
+
+	/**
+	 * Add a frame at the beginning of the queue. Remove the last one if the
+	 * maximum limit has been reached.
+	 * 
+	 * @param image
+	 *            image to add to the queue.
+	 */
+	protected void addCapturedFrame(final Mat image) {
+		if (capturedFramesQueue.size() >= webcamProperties.getMaximumFramesInVideoFiles()) {
+			writeRecordedVideo(capturedFramesQueue);
+		}
+		final Mat newImage = image.clone(); // Had to do that, otherwise always
+											// the same frame stored...
+		capturedFramesQueue.add(newImage);
+	}
+
+	/**
+	 * Return the captured frames queue.
+	 * 
+	 * @return
+	 */
+	protected List<Mat> getCapturedFrames() {
+		return capturedFramesQueue;
+	}
+
+	/**
+	 * Flag to know if frames are being captured.
+	 * 
+	 * @return true if yes, or false.
+	 */
+	public boolean isRecording() {
+		return recording;
+	}
+
+	/**
+	 * Set the recording flag to true.
+	 */
+	public void record() {
+		recording = true;
+	}
+
+	/**
+	 * Set the recording flag to false.
+	 */
+	public void stopRecording() {
+		recording = false;
+	}
+
+	/**
+	 * Flush the captured frames into a video file.
+	 */
+	public void writeRecordedVideo() {
+		writeRecordedVideo(capturedFramesQueue);
 	}
 
 }

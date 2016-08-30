@@ -32,7 +32,7 @@ public class FaceRecognitionCapturedImageHandler implements ICapturedImageHandle
 	@Override
 	public void handle(Mat image) {
 		if (webcamManager.getAuthenticatedUSer() == null) {
-			List<User> users = webcamManager.predictFace(image);
+			List<User> users = webcamManager.predictFaces(image);
 			if (users.size() != 0) {
 				log.info(users.size() + " faces detected. " + Arrays.toString(users.toArray(new User[users.size()])));
 				for (User user : users) {
