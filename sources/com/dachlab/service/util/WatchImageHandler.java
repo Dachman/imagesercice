@@ -32,19 +32,17 @@ public class WatchImageHandler implements ICapturedImageHandler {
 	@Override
 	public void handle(final Mat image) {
 		if (lastBodyDetectedTime != 0) {
-			if (!webcamManager.isRecording() && System.currentTimeMillis() > DateUtils.addSeconds(new Date(lastBodyDetectedTime), webcamManager.webcamProperties.getVideoSequenceLength()).getTime()) {
+			if (!webcamManager.isRecording() || System.currentTimeMillis() > DateUtils.addSeconds(new Date(lastBodyDetectedTime), webcamManager.webcamProperties.getVideoSequenceLength()).getTime()) {
 				log.debug("Time comparison: " + DateFormatUtils.format(DateUtils.addSeconds(new Date(lastBodyDetectedTime), webcamManager.webcamProperties.getVideoSequenceLength()).getTime(),
 						"HH:mm:ss") + ">" + DateFormatUtils.format(System.currentTimeMillis(), "HH:mm:ss") + " Result: " + (System.currentTimeMillis() > DateUtils
 								.addSeconds(new Date(lastBodyDetectedTime), webcamManager.webcamProperties.getVideoSequenceLength()).getTime()));
 				webcamManager.writeRecordedVideo();
 				lastBodyDetectedTime = 0;
 			} else {
-				log.debug("Adding frame.");
 				webcamManager.addCapturedFrame(image);
 			}
-		} else {
-			getBodies(image);
 		}
+		getBodies(image);
 	}
 
 	private void getBodies(final Mat image) {

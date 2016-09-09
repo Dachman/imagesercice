@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.dachlab.google.IGoogleDriveService;
 import com.dachlab.model.User;
 import com.dachlab.properties.IWebcamProperties;
 import com.dachlab.service.IUserSevice;
@@ -64,6 +65,9 @@ public class WebcamManager {
 
 	@Autowired
 	protected IWebcamProperties webcamProperties;
+
+	@Autowired
+	private IGoogleDriveService googleDriveServices;
 
 	/**
 	 * Get an image from the webcam.
@@ -427,7 +431,7 @@ public class WebcamManager {
 	 *            images that will compose the video;
 	 */
 	public void writeRecordedVideo(List<Mat> images) {
-		final String videoFileName = webcamProperties.getVideoFilesPath() + DateFormatUtils.format(new Date(), "yyyyMMdd") + "-" + UUID.randomUUID() + ".avi";
+		final String videoFileName = webcamProperties.getVideoFilesPath() + DateFormatUtils.format(new Date(), "yyyyMMdd HH-mm-ss") + "-" + UUID.randomUUID() + ".avi";
 		log.info("Writing video to disk. File name : " + videoFileName + " (" + images.size() + " frames).");
 		final Size frameSize = new Size((int) camera.get(Videoio.CAP_PROP_FRAME_WIDTH), (int) camera.get(Videoio.CAP_PROP_FRAME_HEIGHT));
 		final VideoWriter videoWriter = new VideoWriter();
@@ -438,7 +442,7 @@ public class WebcamManager {
 			videoWriter.write(image);
 		}
 		videoWriter.release();
-		//Free memory.
+		// Free memory.
 		for (Mat image : images) {
 			image.release();
 		}
@@ -602,7 +606,7 @@ public class WebcamManager {
 	public boolean startWatching() {
 		try {
 			startCapture(new WatchImageHandler(this));
-			return true;
+			return googleDriveServices.startFileStorageProcess(webcamProperties.getVideoFilesPath());
 		} catch (Exception e) {
 			log.error("Error while starting to Watch.", e);
 			return false;
@@ -612,7 +616,7 @@ public class WebcamManager {
 	public boolean stopWatching() {
 		this.recording = false;
 		stopCapture();
-		return true;
+		return googleDriveServices.stopFileStorageProcess();
 	}
 
 	/**

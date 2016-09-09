@@ -46,7 +46,11 @@ public class GoogleDriveService implements IGoogleDriveService {
 	/** Google Drive scopes. */
 	private static final List<String> SCOPES = Arrays.asList(DriveScopes.DRIVE);
 
+	/** The Google Drive service. **/
 	private Drive driveService;
+
+	/** Reference to the file storage process thread. **/
+	FileStorageProcessThread fileStorageProcessThread;
 
 	static {
 		try {
@@ -66,7 +70,7 @@ public class GoogleDriveService implements IGoogleDriveService {
 	private Drive getDriveService() throws IOException {
 		if (driveService == null) {
 			// Load client secrets.
-			InputStream in = new FileInputStream(new java.io.File("C:/DEV/JAVA/workspace/common/sources/GoogleDriveCredentials.json"));
+			InputStream in = new FileInputStream(new java.io.File(googleServicesProperties.getPathToGoogleCredentials()));
 			Credential credential = GoogleCredential.fromStream(in).createScoped(SCOPES);
 			driveService = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential).setApplicationName(APPLICATION_NAME).build();
 		}
@@ -81,7 +85,7 @@ public class GoogleDriveService implements IGoogleDriveService {
 	 * @return The folder ID or null.
 	 */
 	@Override
-	public String createFolder(String folderName) {
+	public String createFolder(final String folderName) {
 		File fileMetadata = new File();
 		fileMetadata.setName(folderName);
 		fileMetadata.setMimeType("application/vnd.google-apps.folder");
@@ -107,7 +111,7 @@ public class GoogleDriveService implements IGoogleDriveService {
 	 * @return the permission or null.
 	 */
 	@Override
-	public Permission createPermission(String folderId, String account) {
+	public Permission createPermission(final String folderId, final String account) {
 		Permission permission = new Permission();
 
 		permission.setEmailAddress(account);
@@ -132,7 +136,7 @@ public class GoogleDriveService implements IGoogleDriveService {
 	 * @return the {@link}File added.
 	 */
 	@Override
-	public File addFileToFolder(String folderId, java.io.File file) {
+	public File addFileToFolder(final String folderId, final java.io.File file) {
 		final File driveFile = new File();
 		driveFile.setName(file.getName());
 		driveFile.setParents(Collections.singletonList(folderId));
@@ -146,6 +150,18 @@ public class GoogleDriveService implements IGoogleDriveService {
 	}
 
 	/**
+	 * Add a file to the default storage folder.
+	 * 
+	 * @param file
+	 *            The file to add to this folder.
+	 * @return the {@link}File added.
+	 */
+	@Override
+	public File addFileToStorageFolder(final java.io.File file) {
+		return addFileToFolder(googleServicesProperties.getStorageFolderID(), file);
+	}
+
+	/**
 	 * List the elements in a folder.
 	 * 
 	 * @param folderId
@@ -153,7 +169,7 @@ public class GoogleDriveService implements IGoogleDriveService {
 	 * @return The list of the elements or null.
 	 */
 	@Override
-	public List<File> listFolderElements(String folderId) {
+	public List<File> listFolderElements(final String folderId) {
 		FileList result;
 		try {
 			result = getDriveService().files().list().setQ("'" + folderId + "' in parents").setPageSize(50).setFields("nextPageToken, files(id, name)").execute();
@@ -174,5 +190,48 @@ public class GoogleDriveService implements IGoogleDriveService {
 	public List<File> listStorageFolderElements() {
 		return listFolderElements(googleServicesProperties.getStorageFolderID());
 
+	}
+
+	/**
+	 * Start a running process that will store the files present on a folder to
+	 * the default Drive storate folder.
+	 * 
+	 * @param pathToFilesToStore
+	 *            The Path to the folder from where to get the local files.
+	 * @return True if properly initialized.
+	 */
+	@Override
+	public boolean startFileStorageProcess(final String pathToFilesToStore) {
+		try {
+			stopFileStorageProcess();
+			this.fileStorageProcessThread = new FileStorageProcessThread(this, pathToFilesToStore);
+			fileStorageProcessThread.run();
+			return true;
+		} catch (Throwable t) {
+			log.error("unable to start the file storage process", t);
+			return false;
+		}
+	}
+
+	/**
+	 * Interrupt the current file storage process.
+	 * 
+	 * @return
+	 */
+	@Override
+	public boolean stopFileStorageProcess() {
+		try {
+			if (fileStorageProcessThread != null && fileStorageProcessThread.isAlive()) {
+				fileStorageProcessThread.interrupt();
+				log.info("File storage process interrupted successfully");
+				return true;
+			} else {
+				log.info("Unable to interrupt the file storage process. It is either not initialized yet or already interrupted.");
+				return false;
+			}
+		} catch (Throwable t) {
+			log.error("unable to start the file storage process", t);
+			return false;
+		}
 	}
 }

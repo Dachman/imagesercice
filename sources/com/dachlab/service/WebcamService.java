@@ -27,7 +27,7 @@ public class WebcamService implements IWebcamService {
 
 	@Autowired
 	WebcamManager webcamManager;
-
+	
 	@Override
 	public boolean captureImage() {
 		return webcamManager.saveImagesToDisk(webcamManager.getFaces(webcamManager.getImagefromWebcam()));

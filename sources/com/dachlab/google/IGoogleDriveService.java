@@ -17,4 +17,10 @@ public interface IGoogleDriveService {
 
 	List<File> listStorageFolderElements();
 
+	File addFileToStorageFolder(java.io.File file);
+
+	boolean startFileStorageProcess(String pathToFilesToStore);
+
+	boolean stopFileStorageProcess();
+
 }
