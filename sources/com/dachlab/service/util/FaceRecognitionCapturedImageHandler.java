@@ -37,16 +37,16 @@ public class FaceRecognitionCapturedImageHandler implements ICapturedImageHandle
 				log.info(users.size() + " faces detected. " + Arrays.toString(users.toArray(new User[users.size()])));
 				for (User user : users) {
 					facesFound.put(user.getUserName(), facesFound.getOrDefault(user.getUserName(), 0) + 1);
-					log.info("Face found : " + user.getUserName() + "(" + facesFound
+					log.debug("   Face found : " + user.getUserName() + "(" + facesFound
 							.get(user.getUserName()) + ")      " + (int) facesFound.get(user.getUserName()) + "?==" + (int) webcamManager.getWebcamProperties().getAuthenticationConfidenceFactor());
 					if ((int) facesFound.get(user.getUserName()) == (int) webcamManager.getWebcamProperties().getAuthenticationConfidenceFactor()) {
 						User userFound = webcamManager.getUserService().getByUserName(user.getUserName());
 						if (userFound != null) {
 							webcamManager.setAuthenticatedUSer(userFound);
-							log.info("User " + user.getUserName() + " found in the DB.");
+							log.debug("   User " + user.getUserName() + " found in the DB.");
 						} else {
 							webcamManager.setAuthenticatedUSer(null);
-							log.debug("User not found in the DB, failed to authenticate.");
+							log.debug("   User not found in the DB, failed to authenticate.");
 						}
 					}
 				}

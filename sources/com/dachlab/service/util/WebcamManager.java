@@ -579,6 +579,34 @@ public class WebcamManager {
 		if (!trained) {
 			learnFaces();
 		}
+
+		setAuthenticatedUSer(null);
+		final List<User> users = predictFace();
+		for (User user : users) {
+			if (user.getUserId() != null && user.getUserId() != 0) {
+				setAuthenticatedUSer(user);
+				log.info("User " + getAuthenticatedUSer() + " authenticated.");
+				break;
+			}
+		}
+
+		if (getAuthenticatedUSer() == null) {
+			log.info("Authenticated failed.");
+		}
+
+		return getAuthenticatedUSer();
+	}
+
+	/**
+	 * Authenticate a user using face recognition.
+	 * 
+	 * @return the authenticated user, null otherwise .
+	 */
+	public User authenticateWithAuthenticationFactor() {
+		log.info("Starting authentication using face recognition.");
+		if (!trained) {
+			learnFaces();
+		}
 		startCapture();
 		setAuthenticatedUSer(null);
 		int loopCounter = webcamProperties.getLoopsForFaceRecognitionAuthentication();
