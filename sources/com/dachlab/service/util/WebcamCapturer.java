@@ -16,11 +16,17 @@ class WebCamCapturer extends Thread {
 
 	private ICapturedImageHandler capturedImageHandler;
 
+	private int duration;
+
 	/**
-	 * Constructure using a camera.
+	 * Constructor using a camera.
 	 * 
 	 * @param camera
 	 *            camera to capture from.
+	 * @param capturedImageHandler
+	 *            Image handled.
+	 * @param duration
+	 *            capture duration in seconds. -1 if unlimited.
 	 */
 	public WebCamCapturer(final VideoCapture camera, final ICapturedImageHandler capturedImageHandler) {
 		this.camera = camera;

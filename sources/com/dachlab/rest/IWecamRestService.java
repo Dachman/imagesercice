@@ -107,4 +107,22 @@ public interface IWecamRestService {
 	 */
 	ResponseEntity<Boolean> stopWatching() throws ImageServiceException;
 
+	/**
+	 * Motion detection between 2 frames.
+	 * @return True if motion detected.
+	 */
+	ResponseEntity<Boolean> detectMotion() throws ImageServiceException;
+
+	/**
+	 * Start the motion detection.
+	 * @throws ImageServiceException Exception if any issue
+	 */
+	void startMotionDetection() throws ImageServiceException;
+
+	/**
+	 * Stop the motion detection.
+	 * @throws ImageServiceException Exception if any issue
+	 */
+	void stopMotionDetection() throws ImageServiceException;
+	
 }

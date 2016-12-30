@@ -12,6 +12,7 @@ import org.apache.commons.lang3.time.DateFormatUtils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
+import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -62,6 +63,7 @@ public class WebcamManager {
 	private List<Mat> capturedFramesQueue = new ArrayList<Mat>();
 
 	private boolean recording = false;
+	private boolean capturing = false;
 
 	@Autowired
 	protected IWebcamProperties webcamProperties;
@@ -109,6 +111,53 @@ public class WebcamManager {
 	}
 
 	/**
+	 * Capture the video for the defined duration and save it into a file.
+	 * 
+	 * @param duration
+	 *            duration of the video in seconds.
+	 * @return true if succeeded.
+	 */
+	public boolean captureMotion(final int duration) {
+		startCapture(new StoreImageHandler(this));
+		// TODO FIXME Video files produced are empty. File seems to not be empty
+		// if no sleep...
+		try {
+			Thread.sleep(duration * 1000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		stopCaptureMotion();
+
+		return true;
+	}
+
+	/**
+	 * Start capturing video frames.
+	 * 
+	 * @return true if succeeded.
+	 */
+	public boolean startCaptureMotion() {
+		return startCapture(new StoreImageHandler(this));
+	}
+
+	/**
+	 * Stop capturing video frames.
+	 * 
+	 * @return true if succeeded.
+	 */
+	public boolean stopCaptureMotion() {
+		try {
+			stopCapture();
+			writeRecordedVideo();
+			return true;
+		} catch (Exception e) {
+			log.error("Unable to complete the stop capture operation.", e);
+			return false;
+		}
+	}
+
+	/**
 	 * Start capturing from the webcam.
 	 * 
 	 * @return true if succeeded.
@@ -125,6 +174,7 @@ public class WebcamManager {
 		}
 		webcamCapturer = new WebCamCapturer(camera, capturedImageHandler);
 		webcamCapturer.start();
+		capturing = true;
 		log.debug("Capture started.");
 		return true;
 	}
@@ -136,16 +186,14 @@ public class WebcamManager {
 	 */
 	public boolean stopCapture() {
 		webcamCapturer.terminate();
-		while (webcamCapturer.isAlive()) {
-			try {
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-				log.error("Unable to monitor the termination of the webcam capturer thread. Unable to determine if it actually stopped.", e);
-				break;
-			}
+		try {
+			webcamCapturer.join(1000);
+		} catch (InterruptedException e) {
+			log.error("Error while attempting to terminate the Webcapturer", e);
 		}
 		log.debug("Capture stopped. Releasing camera.");
 		camera.release();
+		capturing = false;
 		log.debug("Released.");
 		return true;
 	}
@@ -430,9 +478,9 @@ public class WebcamManager {
 	 * @param images
 	 *            images that will compose the video;
 	 */
-	public void writeRecordedVideo(List<Mat> images) {
+	public synchronized void writeRecordedVideo(List<Mat> images) {
 		final String videoFileName = webcamProperties.getVideoFilesPath() + DateFormatUtils.format(new Date(), "yyyyMMdd HH-mm-ss") + "-" + UUID.randomUUID() + ".avi";
-		log.info("Writing video to disk. File name : " + videoFileName + " (" + images.size() + " frames).");
+		log.debug("Writing video to disk. File name : " + videoFileName + " (" + images.size() + " frames).");
 		final Size frameSize = new Size((int) camera.get(Videoio.CAP_PROP_FRAME_WIDTH), (int) camera.get(Videoio.CAP_PROP_FRAME_HEIGHT));
 		final VideoWriter videoWriter = new VideoWriter();
 		videoWriter.open(videoFileName, VideoWriter.fourcc('D', 'I', 'V', 'X'), webcamProperties.getVideoFPS(), frameSize, true);
@@ -442,6 +490,7 @@ public class WebcamManager {
 			videoWriter.write(image);
 		}
 		videoWriter.release();
+
 		// Free memory.
 		for (Mat image : images) {
 			image.release();
@@ -647,6 +696,83 @@ public class WebcamManager {
 		return googleDriveServices.stopFileStorageProcess();
 	}
 
+	public boolean startMotionDetection() {
+		try {
+			startCapture(new StoreImageHandler(this));
+			return googleDriveServices.startFileStorageProcess(webcamProperties.getVideoFilesPath());
+		} catch (Exception e) {
+			log.error("Error while starting Motion Detection.", e);
+			return false;
+		}
+	}
+
+	public boolean stopMotionDetection() {
+		this.recording = false;
+		stopCapture();
+		return googleDriveServices.stopFileStorageProcess();
+	}
+	
+	
+	/**
+	 * Motion detection between 2 frames.
+	 * 
+	 * @param frame1
+	 *            Frame 1. Must be the background. TODO Create a setBackground
+	 *            somewhere...
+	 * @param frame2
+	 *            Frame 2.
+	 * @return True if motion detected.
+	 */
+	public boolean detectMotion(Mat frame1, Mat frame2) {
+
+		boolean targetDetected = false;
+		List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+		Mat hierarchy = new Mat();
+
+		// Move these frames to gray scales.
+		frame1 = toGray(frame1);
+		Imgproc.GaussianBlur(frame1, frame1, new Size(21, 21), 0);
+		frame2 = toGray(frame2);
+		Imgproc.GaussianBlur(frame2, frame2, new Size(21, 21), 0);
+		Mat result = frame1.clone();
+
+		// saveImage(frame1, "C:/tmp/shots/motionDetection/");
+		// saveImage(frame2, "C:/tmp/shots/motionDetection/");
+
+		Core.absdiff(frame1, frame2, result);
+		// Core.subtract(frame2, frame1, result);
+		// saveImage(result, "C:/tmp/shots/motionDetection/");
+
+		// Imgproc.adaptiveThreshold(result, result, 255,
+		// Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV, 5, 2);
+		Imgproc.threshold(result, result, 25, 255, Imgproc.THRESH_BINARY);
+		// saveImage(result, "C:/tmp/shots/motionDetection/");
+		contours.clear();
+		Imgproc.findContours(result, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+		// Draw the contours on the frame 2.
+		for (int i = 0; i < contours.size(); i++) {
+			Mat contour = contours.get(i);
+			double contourarea = Imgproc.contourArea(contour);
+			if (contourarea > 700) {
+				targetDetected = true;
+				drawRectangleOnImage(frame2, Imgproc.boundingRect(contours.get(i)).br(), Imgproc.boundingRect(contours.get(i)).tl(), "");
+				saveImage(frame2, "C:/tmp/shots/motionDetection/");
+				// Imgproc.drawContours(frame1, contours, i, new Scalar(255,
+				// 255, 255), 2);
+			}
+
+		}
+
+		if (contours.size() > 0) {
+			targetDetected = true;
+		} else {
+			targetDetected = false;
+		}
+		return targetDetected;
+
+	}
+
 	/**
 	 * Get the properties accessor.
 	 * 
@@ -740,6 +866,13 @@ public class WebcamManager {
 	 */
 	public void writeRecordedVideo() {
 		writeRecordedVideo(capturedFramesQueue);
+	}
+
+	/**
+	 * @return True if a capture is underway.
+	 */
+	public boolean isCapturing() {
+		return capturing;
 	}
 
 }

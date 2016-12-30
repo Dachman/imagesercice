@@ -90,4 +90,22 @@ public interface IWebcamService {
 	 */
 	boolean stopWatching();
 
+	/**
+	 * Motion detection between 2 frames.
+	 * @param frame1 Frame 1.
+	 * @param frame2 Frame 2.
+	 * @return True if motion detected.
+	 */
+	boolean detectMotion();
+
+	/**
+	 * Stop the motion detection process.
+	 */
+	void stopMotionDetection();
+
+	/**
+	 * Start the motion detection process.
+	 */
+	void startMotionDetection();
+
 }

@@ -162,4 +162,34 @@ public class WebcamRestService implements IWecamRestService {
 		}
 	}
 
+	@Override
+	@RequestMapping(value = "/detectMotion", method = RequestMethod.GET)
+	public @ResponseBody ResponseEntity<Boolean> detectMotion() throws ImageServiceException {
+		try {
+			return ResponseEntity.status(HttpStatus.OK).body(webcamService.detectMotion());
+		} catch (Exception e) {
+			throw new ImageServiceException("Failed to serve the detect motion request.", e);
+		}
+	}
+
+	@Override
+	@RequestMapping(value = "/startMotionDetection", method = RequestMethod.GET)
+	public @ResponseBody void startMotionDetection() throws ImageServiceException {
+		try {
+			webcamService.startMotionDetection();
+		} catch (Exception e) {
+			throw new ImageServiceException("Failed to start the motion detection.", e);
+		}
+	}
+
+	@Override
+	@RequestMapping(value = "/stopMotionDetection", method = RequestMethod.GET)
+	public @ResponseBody void stopMotionDetection() throws ImageServiceException {
+		try {
+			webcamService.stopMotionDetection();
+		} catch (Exception e) {
+			throw new ImageServiceException("Failed to start the motion detection.", e);
+		}
+	}
+
 }
